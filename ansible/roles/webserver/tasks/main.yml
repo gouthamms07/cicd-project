@@ -1,0 +1,73 @@
+---
+# ansible/roles/webserver/tasks/main.yml
+
+- name: Install required system packages
+  apt:
+    name:
+      - curl
+      - wget
+      - git
+      - unzip
+      - ufw
+      - fail2ban
+    state: present
+    update_cache: yes
+
+- name: Configure UFW – allow SSH
+  ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Configure UFW – allow HTTP
+  ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Configure UFW – allow HTTPS
+  ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Configure UFW – allow app port
+  ufw:
+    rule: allow
+    port: "3000"
+    proto: tcp
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+    policy: deny
+
+- name: Start and enable fail2ban
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes
+
+- name: Set system timezone to UTC
+  timezone:
+    name: UTC
+
+- name: Create app user
+  user:
+    name: appuser
+    shell: /bin/bash
+    groups: docker
+    append: yes
+    create_home: yes
+
+- name: Create app directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: appuser
+    group: appuser
+    mode: "0755"
+  loop:
+    - /opt/app
+    - /opt/app/logs
+    - /opt/app/config

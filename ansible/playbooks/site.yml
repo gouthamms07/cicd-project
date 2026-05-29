@@ -1,0 +1,32 @@
+---
+# ansible/playbooks/site.yml
+# Main playbook – runs all roles against the target environment
+
+- name: Configure all servers
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    env: "{{ env | default('staging') }}"
+
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+  roles:
+    - role: webserver
+    - role: docker
+
+  post_tasks:
+    - name: Verify Docker is running
+      service:
+        name: docker
+        state: started
+      register: docker_status
+
+    - name: Show Docker status
+      debug:
+        msg: "Docker is {{ docker_status.state }}"
